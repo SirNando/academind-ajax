@@ -21,17 +21,29 @@ function createCommentsList(comments) {
   return commentListElement;
 }
 
-async function fetchCommentsForPost(event) {
+async function fetchCommentsForPost() {
   const postId = loadCommentsButtonElement.dataset.postid;
-  const response = await fetch(`/posts/${postId}/comments`);
-  const responseData = await response.json();
-
-  const commentsListElement = createCommentsList(responseData);
-  commmentsSectionElement.innerHTML = '';
-  commmentsSectionElement.appendChild(commentsListElement);
+  try {
+    const response = await fetch(`/posts/${postId}/comments`);
+    if(!response.ok) {
+      return;
+    }
+  
+    const responseData = await response.json();
+  
+    if(responseData && responseData.length > 0) {
+      const commentsListElement = createCommentsList(responseData);
+      commmentsSectionElement.innerHTML = '';
+      commmentsSectionElement.appendChild(commentsListElement);
+    } else {
+      commmentsSectionElement.firstElementChild.textContent ='We could not find any comments. Maybe add one?';
+    }
+  } catch(error) {
+    alert('Getting comments failed.');
+  }
 }
 
-function saveComment(event) {
+async function saveComment(event) {
     event.preventDefault();
     const postId = loadCommentsButtonElement.dataset.postid;
 
@@ -40,13 +52,20 @@ function saveComment(event) {
 
     const comment = {title: enteredTitle, text: enteredText};
 
-    fetch(`/posts/${postId}/comments`, {
+    const response = await fetch(`/posts/${postId}/comments`, {
         method: 'POST',
         body: JSON.stringify(comment),
         headers: {
             'Content-Type': 'application/json'
         }
     });
+
+    if(response.ok) {
+      fetchCommentsForPost();
+    } else {
+      alert('Could not send comment.');
+    }
+
 }
 
 
